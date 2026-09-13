@@ -35,7 +35,6 @@ jobs:
     strategy:
       matrix:
         device:
-          - { name: a71, device2: a71xxx, soc: sdmmagpie }
           - { name: a70q, device2: a70, soc: sm6150 }
 
     steps:
