@@ -19,34 +19,7 @@ build_kernel() {
     BUILD_VAR="-j$(nproc) -C $(pwd) O=$(pwd)/out $KERNEL_MAKE_ENV ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1"
 
     cat arch/arm64/configs/sdmmagpie_defconfig arch/arm64/configs/$DEVICE.config > arch/arm64/configs/temp_defconfig
-
-    # Wstrzyknięcie wymaganych konfiguracji pamięci, tmpfs i SELinux dla Android init
-    echo "
-CONFIG_THINLTO=y
-# CONFIG_LTO_NONE is not set
-CONFIG_LTO_CLANG=y
-
-# Android init PropertyInit() shared memory workspace
-CONFIG_ASHMEM=y
-CONFIG_MEMFD_CREATE=y
-CONFIG_SHMEM=y
-CONFIG_TMPFS=y
-CONFIG_TMPFS_POSIX_ACL=y
-CONFIG_TMPFS_XATTR=y
-
-# Boot parameters i SELinux overrides
-CONFIG_SECURITY_SELINUX_BOOTPARAM=y
-CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
-" >> arch/arm64/configs/temp_defconfig
-
     make $BUILD_VAR temp_defconfig
-
-    # --- VERIFICATION CHECK ---
-    echo "=========================================="
-    echo "CHECKING PROPERLY INJECTED CONFIGS:"
-    grep -E "CONFIG_TMPFS_XATTR|CONFIG_ASHMEM|CONFIG_MEMFD_CREATE|CONFIG_SHMEM" out/.config
-    echo "=========================================="
-    
     rm arch/arm64/configs/temp_defconfig
 }
 
