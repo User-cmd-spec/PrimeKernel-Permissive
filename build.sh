@@ -73,3 +73,8 @@ prepare_ak3() {
 
     cd "$KERNEL_DIR"
 }
+
+build_kernel
+build_dtb
+build_dtbo
+prepare_ak3
