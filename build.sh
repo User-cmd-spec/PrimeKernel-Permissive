@@ -11,7 +11,7 @@ build_kernel() {
     echo "-----------------------------------------------"
 
     export ARCH=arm64
-    mkdir out
+    mkdir -p out
 
     export PATH=$(pwd)/llvm-22/bin:$PATH
 
@@ -20,24 +20,32 @@ build_kernel() {
 
     cat arch/arm64/configs/sdmmagpie_defconfig arch/arm64/configs/$DEVICE.config > arch/arm64/configs/temp_defconfig
 
+    # Wstrzyknięcie wymaganych konfiguracji pamięci, tmpfs i SELinux dla Android init
     echo "
 CONFIG_THINLTO=y
 # CONFIG_LTO_NONE is not set
 CONFIG_LTO_CLANG=y
+
+# Android init PropertyInit() shared memory workspace
 CONFIG_ASHMEM=y
 CONFIG_MEMFD_CREATE=y
+CONFIG_SHMEM=y
 CONFIG_TMPFS=y
 CONFIG_TMPFS_POSIX_ACL=y
 CONFIG_TMPFS_XATTR=y
+
+# Boot parameters i SELinux overrides
+CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
 " >> arch/arm64/configs/temp_defconfig
 
     make $BUILD_VAR temp_defconfig
 
     # --- VERIFICATION CHECK ---
-echo "=========================================="
-echo "CHECKING PROPERLY INJECTED CONFIGS:"
-grep -E "CONFIG_TMPFS_XATTR|CONFIG_ASHMEM|CONFIG_MEMFD_CREATE" out/.config
-echo "=========================================="
+    echo "=========================================="
+    echo "CHECKING PROPERLY INJECTED CONFIGS:"
+    grep -E "CONFIG_TMPFS_XATTR|CONFIG_ASHMEM|CONFIG_MEMFD_CREATE|CONFIG_SHMEM" out/.config
+    echo "=========================================="
     
     rm arch/arm64/configs/temp_defconfig
 }
@@ -70,13 +78,17 @@ prepare_ak3() {
     sed -i "s/^device\.name2=.*/device.name2=${DEVICE2}/" anykernel.sh
 
     if [ "$DEVICE" = "a70q" ]; then
-        if ! grep -q "androidboot.selinux.*permissive" anykernel.sh; then
+        if ! grep -q "androidboot.selinux=" anykernel.sh; then
             awk '
             /^write_boot;/ {
                 print "ui_print \" \";"
                 print "ui_print \"WARNING: SELinux forced PERMISSIVE for debugging!\";"
                 print "ui_print \" \";"
-                print "patch_cmdline \"androidboot.selinux\" \"androidboot.selinux=permissive\";"
+                print "if ! grep -q \"androidboot.selinux=\" /tmp/anykernel/cmdline; then"
+                print "    echo -n \" androidboot.selinux=permissive\" >> /tmp/anykernel/cmdline"
+                print "else"
+                print "    patch_cmdline \"androidboot.selinux\" \"androidboot.selinux=permissive\""
+                print "fi"
             }
             { print }
             ' anykernel.sh > anykernel.sh.tmp && mv anykernel.sh.tmp anykernel.sh
