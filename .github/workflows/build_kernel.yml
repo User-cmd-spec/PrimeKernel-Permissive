@@ -63,6 +63,23 @@ jobs:
           rm ../llvm.tar.gz
           cd ..
 
+      - name: Patch Defconfig for Verbose Init Logging
+        run: |
+          DEFCONFIG=$(find arch/arm64/configs/ -name "*${{ matrix.device.name }}*_defconfig" -o -name "*a70*_defconfig" | head -n 1)
+          
+          if [ -n "$DEFCONFIG" ]; then
+            echo "Patching defconfig: $DEFCONFIG"
+            echo 'CONFIG_CMDLINE_EXTEND=y' >> "$DEFCONFIG"
+            
+            if grep -q "CONFIG_CMDLINE=" "$DEFCONFIG"; then
+              sed -i 's/CONFIG_CMDLINE="/CONFIG_CMDLINE="androidboot.init_loglevel=7 /g' "$DEFCONFIG"
+            else
+              echo 'CONFIG_CMDLINE="androidboot.init_loglevel=7"' >> "$DEFCONFIG"
+            fi
+          else
+            echo "Warning: Could not automatically locate target defconfig to patch."
+          fi
+
       - name: Build kernel
         run: |
           chmod +x build.sh
@@ -93,14 +110,6 @@ jobs:
         with:
           name: PrimeKernel-${{ matrix.device.name }}-${{ needs.prepare.outputs.release_ts }}
           path: AnyKernel3/
-
-      - name: Upload release notes
-        if: matrix.device.name == 'a70q'
-        uses: actions/upload-artifact@v5
-        with:
-          name: release-notes
-          path: version.txt
-          retention-days: 1
 
   release:
     needs: [prepare, build]
