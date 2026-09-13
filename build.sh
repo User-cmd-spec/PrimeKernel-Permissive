@@ -32,6 +32,13 @@ CONFIG_TMPFS_XATTR=y
 " >> arch/arm64/configs/temp_defconfig
 
     make $BUILD_VAR temp_defconfig
+
+    # --- VERIFICATION CHECK ---
+echo "=========================================="
+echo "CHECKING PROPERLY INJECTED CONFIGS:"
+grep -E "CONFIG_TMPFS_XATTR|CONFIG_ASHMEM|CONFIG_MEMFD_CREATE" out/.config
+echo "=========================================="
+    
     rm arch/arm64/configs/temp_defconfig
 }
 
