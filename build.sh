@@ -57,6 +57,12 @@ prepare_ak3() {
     sed -i "s/^device\.name1=.*/device.name1=${DEVICE}/" anykernel.sh
     sed -i "s/^device\.name2=.*/device.name2=${DEVICE2}/" anykernel.sh
 
+    if [ "$DEVICE" = "a70q" ]; then
+        if ! grep -q "androidboot.selinux.*permissive" anykernel.sh; then
+            sed -i '/^write_boot;/i\
+patch_cmdline "androidboot.selinux" "androidboot.selinux=permissive";' anykernel.sh
+
+     
     cd "$KERNEL_DIR"
 }
 
