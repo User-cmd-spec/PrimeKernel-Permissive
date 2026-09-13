@@ -24,12 +24,12 @@ build_kernel() {
 CONFIG_THINLTO=y
 # CONFIG_LTO_NONE is not set
 CONFIG_LTO_CLANG=y
+CONFIG_ASHMEM=y
+CONFIG_MEMFD_CREATE=y
 CONFIG_TMPFS=y
 CONFIG_TMPFS_POSIX_ACL=y
 CONFIG_TMPFS_XATTR=y
-CONFIG_SECURITY_SELINUX_BOOTPARAM=y
-CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
-    " >> arch/arm64/configs/temp_defconfig
+" >> arch/arm64/configs/temp_defconfig
 
     make $BUILD_VAR temp_defconfig
     rm arch/arm64/configs/temp_defconfig
