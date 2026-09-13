@@ -63,21 +63,24 @@ jobs:
           rm ../llvm.tar.gz
           cd ..
 
-      - name: Patch Defconfig for Verbose Init Logging
+      - name: Fix Missing PID Namespaces and Enable Verbose Init Logging
         run: |
-          DEFCONFIG=$(find arch/arm64/configs/ -name "*${{ matrix.device.name }}*_defconfig" -o -name "*a70*_defconfig" | head -n 1)
+          TARGET_DEFCONFIG="arch/arm64/configs/vendor/trinket-perf_defconfig"
           
-          if [ -n "$DEFCONFIG" ]; then
-            echo "Patching defconfig: $DEFCONFIG"
-            echo 'CONFIG_CMDLINE_EXTEND=y' >> "$DEFCONFIG"
+          if [ -f "$TARGET_DEFCONFIG" ]; then
+            echo "Patching $TARGET_DEFCONFIG..."
             
-            if grep -q "CONFIG_CMDLINE=" "$DEFCONFIG"; then
-              sed -i 's/CONFIG_CMDLINE="/CONFIG_CMDLINE="androidboot.init_loglevel=7 /g' "$DEFCONFIG"
+            sed -i 's/# CONFIG_PID_NS is not set/CONFIG_PID_NS=y/' "$TARGET_DEFCONFIG"
+            
+            echo 'CONFIG_CMDLINE_EXTEND=y' >> "$TARGET_DEFCONFIG"
+            if grep -q "CONFIG_CMDLINE=" "$TARGET_DEFCONFIG"; then
+              sed -i 's/CONFIG_CMDLINE="/CONFIG_CMDLINE="androidboot.init_loglevel=7 /g' "$TARGET_DEFCONFIG"
             else
-              echo 'CONFIG_CMDLINE="androidboot.init_loglevel=7"' >> "$DEFCONFIG"
+              echo 'CONFIG_CMDLINE="androidboot.init_loglevel=7"' >> "$TARGET_DEFCONFIG"
             fi
           else
-            echo "Warning: Could not automatically locate target defconfig to patch."
+            echo "Error: $TARGET_DEFCONFIG not found!"
+            exit 1
           fi
 
       - name: Build kernel
