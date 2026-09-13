@@ -52,4 +52,24 @@ prepare_ak3() {
     mv "$KERNEL_DIR/out/dtbo.img" dtbo.img
     mv "$KERNEL_DIR/out/arch/arm64/boot/Image" Image
 
-    mv "$KERNEL_DIR/out/arch/arm64/boot/dts/qcom/$S
+    mv "$KERNEL_DIR/out/arch/arm64/boot/dts/qcom/$SOC.dtb" dtb
+
+    sed -i "s/^device\.name1=.*/device.name1=${DEVICE}/" anykernel.sh
+    sed -i "s/^device\.name2=.*/device.name2=${DEVICE2}/" anykernel.sh
+
+    if [ "$DEVICE" = "a70q" ]; then
+        if ! grep -q "androidboot.selinux.*permissive" anykernel.sh; then
+            awk '
+            /^write_boot;/ {
+                print "ui_print \" \";"
+                print "ui_print \"WARNING: SELinux forced PERMISSIVE for debugging!\";"
+                print "ui_print \" \";"
+                print "patch_cmdline \"androidboot.selinux\" \"androidboot.selinux=permissive\";"
+            }
+            { print }
+            ' anykernel.sh > anykernel.sh.tmp && mv anykernel.sh.tmp anykernel.sh
+        fi
+    fi
+
+    cd "$KERNEL_DIR"
+}
